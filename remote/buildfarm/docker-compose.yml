@@ -1,0 +1,55 @@
+version: "3.9"
+
+volumes:
+  redis-data:      # Metadata
+  worker-cas:      # Actual build artifacts
+
+services:
+  redis:
+    image: "redis:7.2.4"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "6379:6379"
+    
+  server:
+    image: "bazelbuild/buildfarm-server:2.16.0"
+    environment:
+      - CONFIG_PATH=/var/lib/buildfarm-server/config.yml
+    volumes:
+      - type: bind
+        source: ./config
+        target: /var/lib/buildfarm-server
+    ports:
+      - "8980:8980"
+      - "9090:9090"
+    depends_on:
+      redis:
+        condition: service_healthy
+    
+  worker:
+    image: "buildfarm-chromium-worker:latest"
+    #image: "bazelbuild/buildfarm-worker:2.16.0"
+    environment:
+      - CONFIG_PATH=/var/lib/buildfarm-worker/config.yml
+    volumes:
+      - type: bind
+        source: ./config
+        target: /var/lib/buildfarm-worker
+      - type: bind
+        source: ./worker-cas
+        target: /tmp/worker
+    ports:
+      - "8981:8981"
+      - "9091:9090"
+    depends_on:
+      redis:
+        condition: service_healthy
+      server:
+        condition: service_started

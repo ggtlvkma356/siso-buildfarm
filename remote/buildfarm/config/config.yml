@@ -1,0 +1,31 @@
+backplane:
+  type: SHARD
+  redisUri: "redis://redis:6379"
+  queues:
+    - name: "cpu"
+      allowUnmatched: true
+      properties:
+        - name: "min-cores"
+          value: "*"
+        - name: "max-cores"
+          value: "*"
+
+server:
+  instanceType: SHARD
+  name: shard
+  port: 8980
+
+worker:
+  port: 8981
+  publicName: "worker:8981"
+  executeStageWidth: 16
+  inputFetchStageWidth: 8
+  reportResultStageWidth: 4
+  dequeueMatchSettings:
+    allowUnmatched: true
+  linkedInputDirectories:
+    - "(?!external/)[^/]+"
+  storages:
+    - type: FILESYSTEM
+      path: cache
+      maxSizeBytes: 107374182400

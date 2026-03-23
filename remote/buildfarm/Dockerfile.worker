@@ -1,0 +1,16 @@
+ARG BUILDFARM_VERSION=2.16.0
+FROM siso-chromium-with-java AS base
+FROM bazelbuild/buildfarm-worker:${BUILDFARM_VERSION} AS buildfarm
+
+FROM base
+
+COPY --from=buildfarm /tini /tini
+COPY --from=buildfarm /app /app
+
+ENV CONFIG_PATH=/app/build_buildfarm/config.minimal.yml
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=80.0 \
+  -XX:+UseStringDeduplication -XX:+UseCompressedOops \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -Dlogging.config=file:/app/build_buildfarm/src/main/java/build/buildfarm/logging.properties"
+
+ENTRYPOINT ["/tini", "--", "java", "-jar", "/app/build_buildfarm/buildfarm-shard-worker_deploy.jar"]
