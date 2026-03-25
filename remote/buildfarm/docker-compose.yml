@@ -2,7 +2,6 @@ version: "3.9"
 
 volumes:
   redis-data:      # Metadata
-  worker-cas:      # Actual build artifacts
 
 services:
   redis:
